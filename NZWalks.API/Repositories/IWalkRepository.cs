@@ -4,9 +4,10 @@ namespace NZWalks.API.Repositories
 {
     public interface IWalkRepository
     {
-        Task<Walk> GetWalkAsync();
-        Task<Walk> GetWalkByIdAsync(Guid id);
-        Task<Walk> UpdateWalkAsync(Walk walk);
+        Task<List<Walk>> GetAllAsync();
+        Task<Walk?> GetByIdAsync(Guid id);
+        Task<Walk?> UpdateAsync(Guid id,Walk walk);
         Task<Walk> CreateAsync(Walk walk);
+        Task<Walk?> DeleteAsync(Guid id);
     }
 }

@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.Abstractions;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Identity.Client;
+using NZWalks.API.CustomActionFilters;
 using NZWalks.API.Data;
 using NZWalks.API.Models.Domain;
 using NZWalks.API.Models.DTO;
@@ -69,12 +70,23 @@ namespace NZWalks.API.Controllers
         }
 
         [HttpPost]
+        [ValidateModel] // Custom action filter to validate the model state
         public async Task<IActionResult> Create([FromBody] AddRegionDTO addRegionDTO)
         {
-            if (ModelState.IsValid != true)
-            {
-                return NotFound();
-            }
+            
+                var regionDomainModel = mapper.Map<Region>(addRegionDTO);
+
+                regionDomainModel = await regionRepository.CreateAsync(regionDomainModel);
+
+                var regionDto = new RegionDto
+                {
+                    Id = regionDomainModel.Id,
+                    Code = regionDomainModel.Code,
+                    Name = regionDomainModel.Name,
+                    RegionImageUrl = regionDomainModel.RegionImageUrl
+                };
+                return CreatedAtAction(nameof(GetById), new { id = regionDto.Id }, regionDto);
+            
             //var regionDomainModel = new Region
             //{
 
@@ -82,51 +94,39 @@ namespace NZWalks.API.Controllers
             //    Name = addRegionDTO.Name,
             //    RegionImageUrl = addRegionDTO.RegionImageUrl
             //};
-            var regionDomainModel = mapper.Map<Region>(addRegionDTO);
-
-            regionDomainModel= await regionRepository.CreateAsync(regionDomainModel);
-
-            var regionDto = new RegionDto
-            {
-                Id = regionDomainModel.Id,
-                Code = regionDomainModel.Code,
-                Name = regionDomainModel.Name,
-                RegionImageUrl = regionDomainModel.RegionImageUrl
-            };
-            return CreatedAtAction(nameof(GetById), new { id = regionDto.Id },regionDto);
+            
         }
 
         [HttpPut]
         [Route("{id:Guid}")]
+        [ValidateModel] // Custom action filter to validate the model state
         public async Task<IActionResult> Update([FromRoute] Guid id,[FromBody] UpdateRegionDTO updateRegionDTO)
         {
-            //var regionDomainModel = new Region
-            //{
-            //    Code = updateRegionDTO.Code,
-            //    Name = updateRegionDTO.Name,
-            //    RegionImageUrl = updateRegionDTO.RegionImageUrl
-            //};
-            var regionDomainModel = mapper.Map<Region>(updateRegionDTO);
+            
+                //var regionDomainModel = new Region
+                //{
+                //    Code = updateRegionDTO.Code,
+                //    Name = updateRegionDTO.Name,
+                //    RegionImageUrl = updateRegionDTO.RegionImageUrl
+                //};
+                var regionDomainModel = mapper.Map<Region>(updateRegionDTO);
 
-            regionDomainModel = await regionRepository.UpdateAsync(id, regionDomainModel);
+                regionDomainModel = await regionRepository.UpdateAsync(id, regionDomainModel);
 
-            if (ModelState.IsValid == false)
-            {
-                return NotFound();
-            }
-           
 
-            await context.SaveChangesAsync();
 
-            //var regionDto = new Region
-            //{
-            //    Id = regionDomainModel.Id,
-            //    Name = regionDomainModel.Name,
-            //    RegionImageUrl = regionDomainModel.RegionImageUrl
-            //};
-            var regionDto = mapper.Map<RegionDto>(regionDomainModel);
+                await context.SaveChangesAsync();
 
-            return Ok(regionDto);
+                //var regionDto = new Region
+                //{
+                //    Id = regionDomainModel.Id,
+                //    Name = regionDomainModel.Name,
+                //    RegionImageUrl = regionDomainModel.RegionImageUrl
+                //};
+                var regionDto = mapper.Map<RegionDto>(regionDomainModel);
+
+                return Ok(regionDto);
+            
         }
 
         [HttpDelete]

@@ -1,15 +1,21 @@
-﻿using NZWalks.API.Data;
+﻿using AutoMapper;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.EntityFrameworkCore;
+using NZWalks.API.Data;
 using NZWalks.API.Models.Domain;
+using NZWalks.API.Models.DTO;
 
 namespace NZWalks.API.Repositories
 {
     public class SQLWalkRepository : IWalkRepository
     {
         private readonly AppDBContext _context;
+        private readonly IMapper mapper;
 
-        public SQLWalkRepository(AppDBContext context)
+        public SQLWalkRepository(AppDBContext context,IMapper mapper)
         {
             _context = context;
+            this.mapper = mapper;
         }
 
         public async Task<Walk> CreateAsync(Walk walk)
@@ -19,20 +25,52 @@ namespace NZWalks.API.Repositories
             return walk;
         }
 
-        public Task<Walk> GetWalkAsync()
+        public async Task<Walk?> DeleteAsync(Guid id)
         {
-            throw new NotImplementedException();
+            var existingWalk = _context.Walks.FirstOrDefault(x => x.Id == id);
+            if(existingWalk == null)
+            {
+                return null;
+            }
+
+            _context.Walks.Remove(existingWalk);
+            _context.SaveChanges();
+            return existingWalk;
         }
 
-        public Task<Walk> GetWalkByIdAsync(Guid id)
+        public async Task<List<Walk>> GetAllAsync()
         {
-            var walk = _context.Walks.FirstOrDefault(x => x.Id == id);
+            var walks = await _context.Walks.Include("Difficulty").Include("Region").ToListAsync();
+            return walks;
+            
+        }
+
+        public Task<Walk> GetByIdAsync(Guid id)
+        {
+            var walk = _context.Walks.Include("Difficulty").Include("Region").FirstOrDefault(x => x.Id == id);
             return Task.FromResult(walk);
         }
 
-        public Task<Walk> UpdateWalkAsync(Walk walk)
+        public async Task<Walk?> UpdateAsync(Guid id, Walk walk)
         {
-            throw new NotImplementedException();
+            var existingWalk = _context.Walks.FirstOrDefault(x => x.Id == id);
+            if(existingWalk == null)
+            {
+                return null;
+            }
+
+            existingWalk.Name = walk.Name;
+            existingWalk.Description = walk.Description;
+            existingWalk.LengthInKm = walk.LengthInKm;
+            existingWalk.WalkImageUrl = walk.WalkImageUrl;
+            existingWalk.DifficultyId = walk.DifficultyId;
+            existingWalk.RegionId = walk.RegionId;
+
+
+            await _context.SaveChangesAsync();
+
+            
+            return existingWalk;
         }
     }
 }
